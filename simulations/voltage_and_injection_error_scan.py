@@ -13,7 +13,7 @@ import os
 parser = argparse.ArgumentParser(description="This file launches parameter scans in RF voltage and injection energy "
                                              "error.")
 
-parser.add_argument("--emittance", '-em', type=bool, default=True,
+parser.add_argument("--emittance", '-em', type=int, default=1,
                     help="Option to either have small emittance (True) or nominal (False).")
 parser.add_argument("--intensity", '-in', type=float, default=9.0,
                     help="Intensity of the injected bunch, default is 9.0e9.")
@@ -26,7 +26,7 @@ args = parser.parse_args()
 N_t = 30000
 EMIT = args.emittance
 N_p = args.intensity
-IMP = False
+IMP = 0
 
 if args.scan_mode == 1:
     Vs = np.array([0.5, 1.0, 1.5])

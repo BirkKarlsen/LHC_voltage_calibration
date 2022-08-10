@@ -13,13 +13,13 @@ parser.add_argument("--n_turns", '-nt', type=int, default=30000,
                     help="The number of turns to simulates, default is 30000")
 parser.add_argument("--e_err", '-ee', type=float, default=0.0,
                     help="Injection energy error in MeV into the LHC.")
-parser.add_argument("--emittance", '-em', type=bool, default=True,
-                    help="Option to either have small emittance (True) or nominal (False).")
+parser.add_argument("--emittance", '-em', type=int, default=1,
+                    help="Option to either have small emittance (1) or nominal (0).")
 parser.add_argument("--rf_voltage", '-rv', type=float, default=0.5,
                     help="RF voltage in MV, default is 0.5 MV")
 parser.add_argument("--intensity", '-in', type=float, default=9.0,
                     help="Intensity of the injected bunch, default is 9.0e9.")
-parser.add_argument("--impedance", '-im', type=bool, default=False,
+parser.add_argument("--impedance", '-im', type=int, default=0,
                     help="Option to include a LHC flat-bottom impedance model.")
 parser.add_argument("--save_to", '-st', type=str,
                     help="Option for custom name to the save-to-folder.")
@@ -27,8 +27,8 @@ parser.add_argument("--save_to", '-st', type=str,
 args = parser.parse_args()
 
 # Options -------------------------------------------------------------------------------------------------------------
-LXPLUS = True
-IMP = args.impedance
+LXPLUS = False
+IMP = bool(args.impedance)
 if IMP:
     imp_str = '_with_impedance'
 else:
@@ -123,7 +123,7 @@ profile.track()
 # Impedance
 if IMP:
     imp_data = np.loadtxt(lxdir + 'impedance_models/Zlong_Allthemachine_450GeV_B1_LHC_inj_450GeV_B1.dat', skiprows=1)
-    imp_table = InputTable(imp_data[:, 0], imp_data[:, 1], imp_data[:, 3])
+    imp_table = InputTable(imp_data[:, 0], imp_data[:, 1], imp_data[:, 2])
 
     ind_volt_freq = InducedVoltageFreq(beam, profile, [imp_table], frequency_resolution=freqRes)
     total_Vind = TotalInducedVoltage(beam, profile, [ind_volt_freq])
