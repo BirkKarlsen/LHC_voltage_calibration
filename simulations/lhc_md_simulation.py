@@ -27,7 +27,7 @@ parser.add_argument("--save_to", '-st', type=str,
 args = parser.parse_args()
 
 # Options -------------------------------------------------------------------------------------------------------------
-LXPLUS = False
+LXPLUS = True
 IMP = bool(args.impedance)
 if IMP:
     imp_str = '_with_impedance'
