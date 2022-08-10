@@ -38,8 +38,11 @@ else:
 import numpy as np
 import os
 from datetime import date
+from scipy.constants import c
+import matplotlib.pyplot as plt
 
 import utility_files.data_utilities as dut
+import utility_files.mathematical_relations as mre
 
 from blond.input_parameters.rf_parameters import RFStation
 from blond.input_parameters.ring import Ring
@@ -48,6 +51,7 @@ from blond.beam.profile import Profile, CutOptions
 from blond.trackers.tracker import RingAndRFTracker
 from blond.impedances.impedance_sources import InputTable
 from blond.impedances.impedance import InducedVoltageFreq, TotalInducedVoltage
+from blond.trackers.utilities import separatrix
 
 
 # Parameters ----------------------------------------------------------------------------------------------------------
@@ -61,7 +65,7 @@ V = args.rf_voltage * 1e6           # RF voltage [V]
 dphi = 0                            # Phase modulation/offset [rad]
 
 # Beam parameters
-N_p = args.intensity                # Bunch intensity [p/b]
+N_p = args.intensity * 1e9          # Bunch intensity [p/b]
 E_err = args.e_err * 1e6            # Injection energy error [eV]
 
 # Simulation parameters
@@ -99,9 +103,9 @@ rfstation = RFStation(ring, [h], [V], [dphi])
 beam = Beam(ring, N_m, N_p)
 
 # Beam Profile
-profile = Profile(beam, CutOptions(cut_left=-0.5 * rfstation.t_rf[0, 0],
-                                   cut_right=1.5 * rfstation.t_rf[0, 0],
-                                   n_slices=2 * 2**7))
+profile = Profile(beam, CutOptions(cut_left=-1.5 * rfstation.t_rf[0, 0],
+                                   cut_right=2.5 * rfstation.t_rf[0, 0],
+                                   n_slices=4 * 2**7))
 
 # Fetching the beam
 for file in os.listdir(lxdir + data_files_dir + 'generated_beams/'):
@@ -109,8 +113,11 @@ for file in os.listdir(lxdir + data_files_dir + 'generated_beams/'):
         beam_str = file
 
 beam_data = np.load(lxdir + data_files_dir + 'generated_beams/' + beam_str)
-beam.dE = beam_data[0, :]
-beam.dt = beam_data[1, :]
+# Delta t to compensate for difference in bucket length between the LHC and SPS
+Dt = (((2 * np.pi * mre.R_SPS)/(mre.h_SPS * c * mre.beta)) - rfstation.t_rf[0, 0])/2
+
+beam.dE = beam_data[0, :] + E_err
+beam.dt = beam_data[1, :] - Dt
 profile.track()
 
 # Impedance
@@ -153,23 +160,32 @@ for i in range(N_t):
         total_Vind.induced_voltage_sum()
 
     if i % dt_track == 0:
-        bunch_pos[j], bunch_length[j] = dut.extract_bunch_position(profile.bin_centers, profile.n_macroparticles)
+        bunch_pos[j], bunch_length[j] = dut.extract_bunch_position(profile.bin_centers, profile.n_macroparticles,
+                                                                   wind_len=2.5)
         bunch_pos_COM[j] = dut.bunch_position_from_COM(profile.bin_centers, profile.n_macroparticles)
         time_since_injection[j] = np.sum(rfstation.t_rev[:i])
         j += 1
 
     if i % dt_plot == 0:
-        dut.save_profile(Profile, i, sim_dir)
-        dut.plot_profile(Profile, i, sim_dir)
+        print(f'Turn {i}')
+        dut.save_profile(profile, i, lxdir + sim_dir)
+        dut.plot_profile(profile, i, lxdir + sim_dir)
 
-        dut.plot_bunch_position(bunch_pos, time_since_injection, j - 1, sim_dir)
-        dut.plot_bunch_position(bunch_pos_COM, time_since_injection, j - 1, sim_dir, COM=True)
-        dut.plot_bunch_length(bunch_length, time_since_injection, j - 1, sim_dir)
 
-        dut.save_array(bunch_pos, 'bunch_position', sim_dir)
-        dut.save_array(bunch_length, 'bunch_length', sim_dir)
-        dut.save_array(bunch_pos_COM, 'bunch_position_com', sim_dir)
-        dut.save_array(time_since_injection, 'time_since_injection', sim_dir)
+        dts = np.linspace(-1.25e-9, (2.5 + 1.25) * 1e-9, 1000)
+        des = separatrix(ring, rfstation, dts)
+        dut.plot_phase_space(beam, des, dts)
+        plt.savefig(lxdir + sim_dir + f'phase_space_{i}.pdf')
+
+
+        dut.plot_bunch_position(bunch_pos, time_since_injection, j - 1, lxdir + sim_dir)
+        dut.plot_bunch_position(bunch_pos_COM, time_since_injection, j - 1, lxdir + sim_dir, COM=True)
+        dut.plot_bunch_length(bunch_length, time_since_injection, j - 1, lxdir + sim_dir)
+
+        dut.save_array(bunch_pos, 'bunch_position', lxdir + sim_dir)
+        dut.save_array(bunch_length, 'bunch_length', lxdir + sim_dir)
+        dut.save_array(bunch_pos_COM, 'bunch_position_com', lxdir + sim_dir)
+        dut.save_array(time_since_injection, 'time_since_injection', lxdir + sim_dir)
 
 
 

@@ -23,6 +23,9 @@ eta1 = (1/gamma_t1**2) - (1/gamma_s**2)
 eta2 = (1/gamma_t2**2) - (1/gamma_s**2)
 beta = np.sqrt(1 - 1/gamma_s**2)
 
+h_SPS = 4620
+R_SPS = 1100.009
+
 # Functions
 
 def synchrotron_frequency(V, h=h, eta=eta1, q=q, phi_s=phi_s, beta=beta, T_rev=T_rev, E_s=E_s):

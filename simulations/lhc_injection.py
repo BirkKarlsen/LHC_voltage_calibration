@@ -83,6 +83,18 @@ bunch_pos = np.zeros(N_t)
 bunch_pos_COM = np.zeros(N_t)
 bunch_length = np.zeros(N_t)
 
+profile.track()
+
+dts = np.linspace(-1.25e-9, (2.5 + 1.25) * 1e-9, 1000)
+des = separatrix(ring, rfstation, dts)
+dut.plot_phase_space(beam, des, dts)
+plt.show()
+
+
+plt.figure()
+plt.plot(profile.bin_centers, profile.n_macroparticles)
+plt.show()
+
 for i in range(N_t):
     rftracker.track()
     profile.track()

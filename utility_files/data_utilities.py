@@ -11,6 +11,7 @@ from blond_common.fitting.profile import binomial_amplitudeN_fit, FitOptions
 from blond_common.interfaces.beam.analytic_distribution import binomialAmplitudeN
 import os
 import h5py
+import seaborn as sns
 
 from scipy.stats import linregress
 from scipy.optimize import curve_fit
@@ -39,7 +40,7 @@ def interp_f(time, bunch, level):
 
 
 def getBeamPattern(timeScale, frames, heightFactor=0.015, distance=500, N_bunch_max=3564,
-                     fit_option='fwhm', plot_fit=False, baseline_length=1, BASE = False,
+                     fit_option='fwhm', plot_fit=False, baseline_length=1, BASE=False,
                      wind_len=10):
     dt = timeScale[1] - timeScale[0]
     fit_window = int(round(wind_len * 1e-9 / dt / 2))
@@ -122,9 +123,10 @@ def getBeamPattern(timeScale, frames, heightFactor=0.015, distance=500, N_bunch_
            Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit
 
 
-def extract_bunch_position(time, profile):
+def extract_bunch_position(time, profile, heighFactor=0.015, wind_len=10):
     N_bunches, Bunch_positions, Bunch_peaks, Bunch_lengths, Bunch_intensities, Bunch_positionsFit, \
-    Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(time, np.array([profile]).T)
+    Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(time, np.array([profile]).T,
+                                                                     heightFactor=heighFactor, wind_len=wind_len)
     return Bunch_positionsFit[0, 0], Bunch_lengths[0, 0]
 
 def bunch_position_from_COM(time, profile):
@@ -388,3 +390,16 @@ def plot_bunch_length(bl, time, j, save_to):
 
 def save_array(arr, filename, save_to):
     np.save(save_to + filename, arr)
+
+
+def plot_phase_space(Beam, des, dts):
+    data = {r'$\Delta E$': Beam.dE * 1e-6, r'$\Delta t$': Beam.dt * 1e9}
+    cp = sns.color_palette('coolwarm', as_cmap=True)
+    sns.displot(data, x=r'$\Delta t$', y=r'$\Delta E$', cbar=True, cmap=cp, vmin=0, vmax=150)
+    plt.xlabel(r'$\Delta t$ [ns]')
+    plt.ylabel(r'$\Delta E$ [MeV]')
+    plt.xlim((-1.25, 2.5 + 1.25))
+    plt.ylim((-600, 600))
+
+    plt.plot(dts * 1e9, des * 1e-6, color='black')
+    plt.plot(dts * 1e9, -des * 1e-6, color='black')

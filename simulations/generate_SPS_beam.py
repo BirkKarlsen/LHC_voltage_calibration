@@ -22,6 +22,7 @@ from blond.beam.distributions_multibunch import matched_from_distribution_densit
 from blond.trackers.tracker import RingAndRFTracker, FullRingAndRF
 from blond.impedances.impedance import TotalInducedVoltage, InducedVoltageFreq
 from blond.impedances.impedance_sources import InputTable
+from blond.trackers.utilities import separatrix
 
 from SPS.impedance_scenario import scenario, impedance2blond
 
@@ -57,6 +58,14 @@ n_samples = 250
 bl, bl_std = dut.find_bunch_length(fdir=fdir, emittance=emittance, n_samples=n_samples)
 bl *= 1e-9
 bl_std *= 1e-9
+
+if emittance == 'nominal':
+    em = 0.7
+    em_str = 'nominal'
+else:
+    em = 0.026
+    em_str = 'small'
+
 
 # Objects -------------------------------------------------------------------------------------------------------------
 
@@ -97,7 +106,8 @@ distribution_options_list = {'bunch_length': [bl],
                              'type': 'binomial',
                              'density_variable': 'Hamiltonian',
                              'bunch_length_fit': 'fwhm',
-                             'exponent': [mu]}
+                             'exponent': [mu],
+                             'emittance': [em]}
 
 matched_from_distribution_density_multibunch(beam, ring, SPS_tracker, distribution_options_list,
                                              1, np.zeros(1),
@@ -110,11 +120,15 @@ plt.figure()
 plt.plot(profile.bin_centers, profile.n_macroparticles)
 
 file_name = f'../data_files/generated_beams/' \
-            f'generated_beam_{emittance}_emittance_bl_{bl * 1e12:.0f}ps_mu{mu * 10:.0f}d.npy'
+            f'generated_beam_{em_str}_emittance_bl_{bl * 1e12:.0f}ps_mu{mu * 10:.0f}d.npy'
 generated_beam = np.zeros((2, N_m))
 generated_beam[0, :] = beam.dE
 generated_beam[1, :] = beam.dt
 
 np.save(file_name, generated_beam)
+
+dts = np.linspace(-1.25e-9, (2.5 + 1.25) * 1e-9, 1000)
+des = separatrix(ring, rfstation, dts)
+dut.plot_phase_space(beam, des, dts)
 
 plt.show()
