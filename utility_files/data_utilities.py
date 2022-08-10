@@ -347,7 +347,7 @@ def plot_profile(Profile, turn, save_to):
     ax.set_xlabel(r'$\Delta t$ [ns]')
     ax.set_ylabel(r'$N_m$ [-]')
 
-    fig.savefig(save_to + f'profile_{turn}.pdf')
+    fig.savefig(save_to + f'profile_{turn}.png')
 
 
 def save_profile(Profile, turn, save_to):
@@ -371,9 +371,9 @@ def plot_bunch_position(bp, time, j, save_to, COM=False):
     ax.set_ylabel(r'Bunch position')
 
     if COM:
-        fig.savefig(save_to + 'bunch_position_com.pdf')
+        fig.savefig(save_to + 'bunch_position_com.png')
     else:
-        fig.savefig(save_to + 'bunch_position.pdf')
+        fig.savefig(save_to + 'bunch_position.png')
 
 
 def plot_bunch_length(bl, time, j, save_to):
@@ -385,7 +385,7 @@ def plot_bunch_length(bl, time, j, save_to):
     ax.set_xlabel(r'Time since injection [$\mu$s]')
     ax.set_ylabel(r'Bunch length')
 
-    fig.savefig(save_to + 'bunch_length.pdf')
+    fig.savefig(save_to + 'bunch_length.png')
 
 
 def save_array(arr, filename, save_to):

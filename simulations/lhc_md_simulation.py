@@ -175,7 +175,7 @@ for i in range(N_t):
         dts = np.linspace(-1.25e-9, (2.5 + 1.25) * 1e-9, 1000)
         des = separatrix(ring, rfstation, dts)
         dut.plot_phase_space(beam, des, dts)
-        plt.savefig(lxdir + sim_dir + f'phase_space_{i}.pdf')
+        plt.savefig(lxdir + sim_dir + f'phase_space_{i}.png')
 
 
         dut.plot_bunch_position(bunch_pos, time_since_injection, j - 1, lxdir + sim_dir)
