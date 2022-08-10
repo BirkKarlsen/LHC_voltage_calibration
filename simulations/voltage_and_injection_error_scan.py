@@ -41,7 +41,7 @@ print(f'RF voltage: Max = {Vs[-1]:.1f} MV, Min = {Vs[0]:.1f} MV, Step = {Vs[2] -
 print()
 
 current_working_directory = os.getcwd() + '/'
-sim_file = 'lhc_md_simulation.py'
+sim_file = 'launch_simulation.py'
 
 for i in range(len(Vs)):
     for j in range(len(Es)):
