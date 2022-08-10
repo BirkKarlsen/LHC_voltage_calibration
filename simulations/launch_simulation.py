@@ -30,7 +30,7 @@ parser.add_argument("--rf_voltage", '-rv', type=float, default=0.5,
                     help="RF voltage in MV, default is 0.5 MV")
 parser.add_argument("--intensity", '-in', type=float, default=9.0,
                     help="Intensity of the injected bunch, default is 9.0e9.")
-parser.add_argument("--impedance", '-im', type=bool, default=0,
+parser.add_argument("--impedance", '-im', type=int, default=0,
                     help="Option to include a LHC flat-bottom impedance model.")
 
 args = parser.parse_args()
