@@ -52,7 +52,7 @@ else:
     emit_str = 'nominal'
 
 signal_name = args.signal_type
-mst_dir = os.getcwd()[:-len('utility_files')]
+mst_dir = os.getcwd()[:-len('simulations')]
 TBT_PARAM = args.tbt_param
 
 save_dir = mst_dir + 'data_files/'
