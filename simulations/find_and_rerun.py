@@ -51,8 +51,6 @@ mst_dir = os.getcwd()[:-len('simulations')]
 sub_dir = os.getcwd()[:-len('Simulation_Files/LHC_voltage_calibration/simulations')] \
           + 'Submittion_Files/LHC_voltage_calibration/'
 
-TBT_PARAM = args.tbt_param
-
 data_dir = mst_dir + 'data_files/'
 
 
