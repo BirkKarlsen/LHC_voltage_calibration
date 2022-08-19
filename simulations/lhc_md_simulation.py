@@ -126,10 +126,11 @@ profile.track()
 
 # Impedance
 if IMP:
+    n_necessary = 57418             # Necessary indices to keep when we want to resolve up to 50 GHz
     imp_data = np.loadtxt(lxdir + 'impedance_models/Zlong_Allthemachine_450GeV_B1_LHC_inj_450GeV_B1.dat', skiprows=1)
-    imp_table = InputTable(imp_data[:, 0], imp_data[:, 1], imp_data[:, 2])
+    imp_table = InputTable(imp_data[:n_necessary, 0], imp_data[:n_necessary, 1], imp_data[:n_necessary, 2])
 
-    ind_volt_freq = InducedVoltageFreq(beam, profile, [imp_table], frequency_resolution=freqRes)
+    ind_volt_freq = InducedVoltageFreq(beam, profile, [imp_table])
     total_Vind = TotalInducedVoltage(beam, profile, [ind_volt_freq])
 else:
     total_Vind = None
