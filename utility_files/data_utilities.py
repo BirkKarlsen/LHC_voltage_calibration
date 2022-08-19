@@ -12,9 +12,13 @@ from blond_common.interfaces.beam.analytic_distribution import binomialAmplitude
 import os
 import h5py
 import seaborn as sns
+import scipy.optimize
+
+import utility_files.mathematical_relations as mre
 
 from scipy.stats import linregress
 from scipy.optimize import curve_fit
+from scipy.interpolate import interp1d
 
 
 def fwhm(x, y, level=0.5):
@@ -129,6 +133,7 @@ def extract_bunch_position(time, profile, heighFactor=0.015, wind_len=10):
                                                                      heightFactor=heighFactor, wind_len=wind_len)
     return Bunch_positionsFit[0, 0], Bunch_lengths[0, 0]
 
+
 def bunch_position_from_COM(time, profile):
     M = np.trapz(profile, time)
     return np.trapz(profile * time, time) / M
@@ -140,8 +145,10 @@ def naive_fit_sine(signal, t):
     slope, intercept, r, p, se = linregress(t, signal)
     return slope
 
+
 def sine_wave(t, omega, A, phi):
     return A * np.sin(omega * t + phi)
+
 
 def fit_sine_curve_fit(signal, t):
     popt, pcov = curve_fit(sine_wave, t, signal, p0=[0.008, 0.15, 0])
@@ -149,20 +156,18 @@ def fit_sine_curve_fit(signal, t):
     return popt
 
 
-import numpy, scipy.optimize
-
 def fit_sin(tt, yy):
     '''Fit sin to the input time sequence, and return fitting parameters "amp", "omega", "phase", "offset", "freq", "period" and "fitfunc"'''
-    tt = numpy.array(tt)
-    yy = numpy.array(yy)
-    ff = numpy.fft.fftfreq(len(tt), (tt[1]-tt[0]))   # assume uniform spacing
-    Fyy = abs(numpy.fft.fft(yy))
-    guess_freq = abs(ff[numpy.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
-    guess_amp = numpy.std(yy) * 2.**0.5
-    guess_offset = numpy.mean(yy)
-    guess = numpy.array([guess_amp, 2.*numpy.pi*guess_freq, 0., guess_offset, 0])
+    tt = np.array(tt)
+    yy = np.array(yy)
+    ff = np.fft.fftfreq(len(tt), (tt[1]-tt[0]))   # assume uniform spacing
+    Fyy = abs(np.fft.fft(yy))
+    guess_freq = abs(ff[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
+    guess_amp = np.std(yy) * 2.**0.5
+    guess_offset = np.mean(yy)
+    guess = np.array([guess_amp, 2.*np.pi*guess_freq, 0., guess_offset, 0])
 
-    def sinfunc(t, A, w, p, c, alpha):  return A * numpy.sin(w*t + p) * np.exp(-alpha * t) + c
+    def sinfunc(t, A, w, p, c, alpha): return A * np.sin(w*t + p) * np.exp(-alpha * t) + c
     try:
         popt, pcov = scipy.optimize.curve_fit(sinfunc, tt, yy, p0=guess)
     except:
@@ -171,10 +176,10 @@ def fit_sin(tt, yy):
         plt.show()
 
     A, w, p, c, alpha = popt
-    f = w/(2.*numpy.pi)
-    fitfunc = lambda t: A * numpy.sin(w*t + p) * np.exp(-alpha * t) + c
+    f = w/(2.*np.pi)
+    fitfunc = lambda t: A * np.sin(w*t + p) * np.exp(-alpha * t) + c
     return {"amp": A, "omega": w, "phase": p, "offset": c, "alpha": alpha, "freq": f,
-            "period": 1./f, "fitfunc": fitfunc, "maxcov": numpy.max(pcov), "rawres": (guess,popt,pcov)}
+            "period": 1./f, "fitfunc": fitfunc, "maxcov": np.max(pcov), "rawres": (guess, popt, pcov)}
 
 
 def reshape_data(data, t, T):
@@ -190,6 +195,7 @@ def reshape_data(data, t, T):
 
     return rdata
 
+
 def analyse_profile(profile, sample_rate):
     t = np.linspace(0, len(profile) / sample_rate, len(profile))
 
@@ -202,6 +208,7 @@ def get_profile_data(f, fdir):
 
     return profile, t
 
+
 def find_file_in_folder(f, fdir):
     file_name = None
     for file in os.listdir(fdir):
@@ -209,6 +216,7 @@ def find_file_in_folder(f, fdir):
             file_name = file
 
     return file_name
+
 
 def get_sorted_files(V, QL, cavity, beam, emittance, add=''):
     V = str(V).replace('.', '')
@@ -293,6 +301,204 @@ def analyse_synchrotron_frequency_with_all_cavities(V, QL, emittance, fdir, T_re
 
     return freqs_init, freqs_final
 
+
+def analyze_profile(profile, t, T_rev, turn_constant, init_osc_length, final_osc_start):
+
+    N_bunches, Bunch_positions, Bunch_peaks, Bunch_lengths, Bunch_intensities, Bunch_positionsFit, \
+    Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(t, profile, heightFactor=30,
+                                                                         wind_len=4)
+
+    bpos = Bunch_positionsFit[:, 0]
+    t = np.linspace(0, len(bpos), len(bpos)) * T_rev * turn_constant
+
+    fit_dict_init = fit_sin(t[:init_osc_length], bpos[:init_osc_length])
+    fit_dict_final = fit_sin(t[final_osc_start:], bpos[final_osc_start:])
+
+    return fit_dict_init, fit_dict_final, bpos, Bunch_lengths[:, 0], t
+
+
+def plot_cavity(bpos, t, blen, i_fit, f_fit, cavID):
+
+    plt.figure()
+    plt.title(f'Bunch Position, {cavID}')
+    plt.plot(t, bpos, label='M')
+    plt.plot(t, i_fit['fitfunc'](t), label='FIT I')
+    plt.plot(t, f_fit['fitfunc'](t), label='FIT F')
+    plt.legend()
+
+    plt.figure()
+    plt.title(f'Bunch Length, {cavID}')
+    plt.plot(t, blen)
+
+
+def analyze_profiles_cavity_by_cavity(V, QL, cavitiesB1, cavitiesB2, emittance, fdir, T_rev, turn_constant,
+                                      init_osc_length, final_osc_start, add='', plt_cav1=None, plt_cav2=None,
+                                      fbl_mean=1000):
+    B1_files = []
+    B2_files = []
+    for i in range(len(cavitiesB1)):
+        B1_files.append(get_sorted_files(V=V, QL=QL, cavity=cavitiesB1[i],
+                                         beam=1, emittance=emittance, add=add))
+        B2_files.append(get_sorted_files(V=V, QL=QL, cavity=cavitiesB2[i],
+                                         beam=2, emittance=emittance, add=add))
+
+    freqs_init = np.zeros((len(cavitiesB1), 2))
+    freqs_final = np.zeros((len(cavitiesB1), 2))
+    init_bl = np.zeros((len(cavitiesB1), 2))
+    final_bl = np.zeros((len(cavitiesB1), 2))
+
+    for i in range(len(cavitiesB1)):
+        # Beam 1
+        B1_profiles, t = get_profile_data(B1_files[i], fdir)
+
+        fit_dict_init, fit_dict_final, bpos_i, blen_i, ti = analyze_profile(B1_profiles, t, T_rev, turn_constant,
+                                                                        init_osc_length, final_osc_start)
+        freqs_init[i, 0] = fit_dict_init['freq']
+        freqs_final[i, 0] = fit_dict_final['freq']
+        init_bl[i, 0] = blen_i[0]
+        final_bl[i, 0] = np.mean(blen_i[-fbl_mean:])
+
+        if plt_cav1 is not None and cavitiesB1[i] in plt_cav1:
+            plot_cavity(bpos_i, ti, blen_i, fit_dict_init, fit_dict_final, f'{cavitiesB1[i]}B1')
+
+        # Beam 2
+        B2_profiles, t = get_profile_data(B2_files[i], fdir)
+
+        fit_dict_init, fit_dict_final, bpos_i, blen_i, ti = analyze_profile(B2_profiles, t, T_rev, turn_constant,
+                                                                        init_osc_length, final_osc_start)
+
+        freqs_init[i, 1] = fit_dict_init['freq']
+        freqs_final[i, 1] = fit_dict_final['freq']
+        init_bl[i, 1] = blen_i[0]
+        final_bl[i, 1] = np.mean(blen_i[-fbl_mean:])
+
+        if plt_cav2 is not None and cavitiesB2[i] in plt_cav2:
+            plot_cavity(bpos_i, ti, blen_i, fit_dict_init, fit_dict_final, f'{cavitiesB2[i]}B2')
+
+    return freqs_init, freqs_final, init_bl, final_bl
+
+
+def analyse_profiles_all_cavities(V, QL, emittance, fdir, T_rev, turn_constant, init_osc_length,
+                                  final_osc_start, add='', plt1=False, plt2=False, fbl_mean=1000):
+
+    B1_file = get_sorted_files(V=V, QL=QL, cavity='all', beam=1, emittance=emittance, add=add)
+    B2_file = get_sorted_files(V=V, QL=QL, cavity='all', beam=2, emittance=emittance, add=add)
+
+    freqs_init = np.zeros(2)
+    freqs_final = np.zeros(2)
+    init_bl = np.zeros(2)
+    final_bl = np.zeros(2)
+
+    # Beam 1
+    B1_profiles, t = get_profile_data(B1_file, fdir)
+
+    fit_dict_init, fit_dict_final, bpos_i, blen_i, ti = analyze_profile(B1_profiles, t, T_rev, turn_constant,
+                                                                        init_osc_length, final_osc_start)
+
+    freqs_init[0] = fit_dict_init['freq']
+    freqs_final[0] = fit_dict_final['freq']
+    init_bl[0] = blen_i[0]
+    final_bl[0] = np.mean(blen_i[-fbl_mean:])
+
+    if plt1:
+        plot_cavity(bpos_i, ti, blen_i, fit_dict_init, fit_dict_final, f'B1 All, $V$ = {V} MV, $Q_L$ = {QL}k')
+
+    # Beam 2
+    B2_profiles, t = get_profile_data(B2_file, fdir)
+
+    fit_dict_init, fit_dict_final, bpos_i, blen_i, ti = analyze_profile(B2_profiles, t, T_rev, turn_constant,
+                                                                        init_osc_length, final_osc_start)
+
+    freqs_init[1] = fit_dict_init['freq']
+    freqs_final[1] = fit_dict_final['freq']
+    init_bl[1] = blen_i[0]
+    final_bl[1] = np.mean(blen_i[-fbl_mean:])
+
+    if plt2:
+        plot_cavity(bpos_i, ti, blen_i, fit_dict_init, fit_dict_final, f'B2 All, $V$ = {V} MV, $Q_L$ = {QL}k')
+
+    return freqs_init, freqs_final, init_bl, final_bl
+
+
+
+def plot_cavity_by_cavity_voltage(cavities, freqs_init, freqs_final, V, QL, add_str=''):
+
+    V_init1 = mre.RF_voltage_from_synchrotron_frequency(freqs_init[:, 0])
+    V_init2 = mre.RF_voltage_from_synchrotron_frequency(freqs_init[:, 1], eta=mre.eta2)
+    V_final1 = mre.RF_voltage_from_synchrotron_frequency(freqs_final[:, 0])
+    V_final2 = mre.RF_voltage_from_synchrotron_frequency(freqs_final[:, 1], eta=mre.eta2)
+
+    fig, ax1 = plt.subplots()
+
+    ax1.set_title(f'$V$ = {V} MV, $Q_L$ = {QL}k{add_str}')
+    ax1.plot(cavities, freqs_init[:, 0], 'x', color='b')
+    ax1.plot(cavities, freqs_final[:, 0], 'D', color='b')
+
+    ax1.plot(cavities, freqs_init[:, 1], 'x', color='r')
+    ax1.plot(cavities, freqs_final[:, 1], 'D', color='r')
+
+    ax1.set_xlabel('Cavity Number [-]')
+    ax1.set_ylabel('Synchrotron Frequency [Hz]')
+    ax1.grid()
+    ax1.set_xticks(cavities)
+
+    ax2 = ax1.twinx()
+    mn, mx = ax1.get_ylim()
+    mn = mre.RF_voltage_from_synchrotron_frequency(mn)
+    mx = mre.RF_voltage_from_synchrotron_frequency(mx)
+    V_s = 1e-6
+    ax2.set_ylim(mn * V_s, mx * V_s)
+    ax2.set_ylabel('RF Voltage [MV]')
+
+    V_s = 1e-6
+    fig, ax1 = plt.subplots()
+    ax1.set_title(f'Measured Voltage, $V$ = {V} MV, $Q_L$ = {QL}k{add_str}')
+    ax1.plot(cavities, V_init1 * V_s, 'x', color='b')
+    ax1.plot(cavities, V_final1 * V_s, 'D', color='b')
+
+    ax1.plot(cavities, V_init2 * V_s, 'x', color='r')
+    ax1.plot(cavities, V_final2 * V_s, 'D', color='r')
+
+    ax1.set_xlabel('Cavity Number [-]')
+    ax1.set_ylabel('RF Voltage [MV]')
+    ax1.set_xticks(cavities)
+    ax1.grid()
+
+    dummy_lines = []
+    linestyles = ['x', 'D']
+    for i in range(2):
+        dummy_lines.append(ax1.plot([], [], linestyles[i], c="black")[0])
+    lines = ax1.get_lines()
+    legend2 = ax1.legend([dummy_lines[i] for i in [0, 1]], ["Initial", "Final"])
+
+
+
+def plot_cavity_by_cavity(cavities, title, ylabel, *args):
+    fig, ax = plt.subplots()
+
+    ax.set_title(title)
+    markers = ['x', 'D', '.']
+    i = 0
+    for arr in args:
+        ax.plot(cavities, arr[:, 0], markers[i], color='b')
+
+        ax.plot(cavities, arr[:, 1], markers[i], color='r')
+        i += 1
+
+    ax.set_xlabel('Cavity Number [-]')
+    ax.set_ylabel(ylabel)
+    ax.set_xticks(cavities)
+    ax.grid()
+
+    dummy_lines = []
+    linestyles = ['x', 'D']
+    for i in range(2):
+        dummy_lines.append(ax.plot([], [], linestyles[i], c="black")[0])
+    lines = ax.get_lines()
+    legend2 = ax.legend([dummy_lines[i] for i in [0, 1]], ["Initial", "Final"])
+
+
+
 def get_first_profiles(fdir, rev_str, profile_length):
     '''
     File to get first profiles from a folder fdir and containing rev_string in the filename.
@@ -316,7 +522,7 @@ def get_first_profiles(fdir, rev_str, profile_length):
         data[:, i] = data_i[:, 0]
         ts[:, i] = ti
 
-    return data, ts
+    return data, ts, file_names
 
 
 def find_bunch_length(fdir, emittance, n_samples=250):
@@ -329,7 +535,7 @@ def find_bunch_length(fdir, emittance, n_samples=250):
     :param n_samples:
     :return:
     '''
-    profiles, ts = get_first_profiles(fdir, emittance, n_samples)
+    profiles, ts, ids = get_first_profiles(fdir, emittance, n_samples)
 
     N_bunches, Bunch_positions, Bunch_peaks, Bunch_lengths, Bunch_intensities, Bunch_positionsFit, \
     Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(ts[:, 0], profiles, heightFactor=30,
@@ -403,3 +609,66 @@ def plot_phase_space(Beam, des, dts):
 
     plt.plot(dts * 1e9, des * 1e-6, color='black')
     plt.plot(dts * 1e9, -des * 1e-6, color='black')
+
+def renormalize_profiles(profiles, ts, N=1):
+    renorm_profiles = np.zeros(profiles.shape)
+
+    for i in range(profiles.shape[1]):
+        N_i = np.trapz(profiles[:, i], ts[:, i])
+
+        renorm_profiles[:, i] = (N/N_i) * profiles[:, i]
+
+    return renorm_profiles
+
+def center_profiles(profiles, ts, pos=2.5e-9/2):
+
+    N_bunches, Bunch_positions, Bunch_peaks, Bunch_lengths, Bunch_intensities, Bunch_positionsFit, \
+    Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(ts[:, 0], profiles, heightFactor=30,
+                                                                     wind_len=5, fit_option='fwhm')
+
+    for i in range(profiles.shape[1]):
+        profile_i = profiles[:, i]
+        t_i = ts[:, i]
+        bs = Bunch_positionsFit[i][0] * 1e-9
+        f = interp1d(t_i - bs + pos, profile_i, fill_value=0, bounds_error=False)
+        profiles[:, i] = f(t_i)
+
+    return profiles
+
+def set_profile_reference(profiles, new_reference=0, sample=25):
+    for i in range(profiles.shape[1]):
+        profiles[:, i] = profiles[:, i] - np.mean(profiles[:sample, i]) + new_reference
+
+    return profiles
+
+def find_weird_bunches(profiles, ts, minimum_bl=1.0, PLOT=False):
+    N_bunches, Bunch_positions, Bunch_peaks, Bunch_lengths, Bunch_intensities, Bunch_positionsFit, \
+    Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(ts[:, 0], profiles, heightFactor=30,
+                                                                     wind_len=5, fit_option='fwhm')
+    if PLOT:
+        plt.figure()
+        plt.plot(Bunch_lengths, '.')
+
+    ids = []
+    for i in range(len(Bunch_lengths[:])):
+        if Bunch_lengths[i][0] < minimum_bl:
+            ids.append(i)
+
+    return np.array(ids)
+
+
+def retrieve_profile_measurements_based_on_file_names(fns, fdir, profile_length=250):
+    profiles = np.zeros((profile_length, len(fns)))
+    ts = np.zeros((profile_length, len(fns)))
+    ids = []
+
+    for i in range(len(fns)):
+        profile_i, ts_i, ids_i = get_first_profiles(fdir, fns[i], profile_length)
+        if len(profile_i[0, :]) == 1 and fns[i] in ids_i[0]:
+            profiles[:, i] = profile_i[:, 0]
+            ts[:, i] = ts_i[:, 0]
+            ids.append(ids_i[0])
+        else:
+            print(f'Error - something went wrong when retrieving {fns[i]}')
+
+    return profiles, ts, ids

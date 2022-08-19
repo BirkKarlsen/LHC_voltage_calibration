@@ -22,9 +22,9 @@ plt.rcParams.update({
 PLT_DATA = True
 VOLTAGE_05MV = False
 VOLTAGE_10MV = False
-VOLTAGE_15MV = True
-VOLTAGE_15MV_CORR = True
-NOMINAL_EMITTANCE = False
+VOLTAGE_15MV = False
+VOLTAGE_15MV_CORR = False
+NOMINAL_EMITTANCE = True
 
 # Parameters
 fdir = f'../data_files/voltage_calibration_sorted/'
@@ -39,13 +39,18 @@ if VOLTAGE_05MV:
     init_osc_length = 2000
     final_osc_start = 10000
 
-    freqs_init, freqs_final = dut.analyse_synchrotron_frequency_cavity_by_cavity(V=0.5, QL=20, cavitiesB1=cavities,
-                                                                                 cavitiesB2=cavities,
-                                                                                 emittance='short', fdir=fdir,
-                                                                                 T_rev=T_rev,
-                                                                                 turn_constant=turn_constant,
-                                                                                 init_osc_length=init_osc_length,
-                                                                                 final_osc_start=final_osc_start)
+    plt_cav1 = None
+    plt_cav2 = None
+
+    freqs_init, freqs_final, ibl, fbl = dut.analyze_profiles_cavity_by_cavity(V=0.5, QL=20, cavitiesB1=cavities,
+                                                                              cavitiesB2=cavities,
+                                                                              emittance='short', fdir=fdir,
+                                                                              T_rev=T_rev,
+                                                                              turn_constant=turn_constant,
+                                                                              init_osc_length=init_osc_length,
+                                                                              final_osc_start=final_osc_start,
+                                                                              plt_cav1=plt_cav1, plt_cav2=plt_cav2,
+                                                                              fbl_mean=1000)
 
     V_init1 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 0])
     V_init2 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 1], eta=mat.eta2)
@@ -56,42 +61,10 @@ if VOLTAGE_05MV:
     f_s2 = mat.synchrotron_frequency(0.5e6, eta=mat.eta2)
 
     if PLT_DATA:
-        fig, ax1 = plt.subplots()
+        dut.plot_cavity_by_cavity_voltage(cavities, freqs_init, freqs_final, 0.5, 20)
 
-        ax1.set_title(f'$V$ = 0.5 MV, $Q_L$ = 20k')
-        ax1.plot(cavities, freqs_init[:, 0], 'x', color='r')
-        ax1.plot(cavities, freqs_final[:, 0], 'D', color='r')
-
-        ax1.plot(cavities, freqs_init[:, 1], 'x', color='b')
-        ax1.plot(cavities, freqs_final[:, 1], 'D', color='b')
-
-        ax1.set_xlabel('Cavity Number [-]')
-        ax1.set_ylabel('Synchrotron Frequency [Hz]')
-        ax1.grid()
-        ax1.set_xticks(cavities)
-
-        ax2 = ax1.twinx()
-        mn, mx = ax1.get_ylim()
-        mn = mat.RF_voltage_from_synchrotron_frequency(mn)
-        mx = mat.RF_voltage_from_synchrotron_frequency(mx)
-        V_s = 1e-6
-        ax2.set_ylim(mn * V_s, mx * V_s)
-        ax2.set_ylabel('RF Voltage [MV]')
-
-
-        V_s = 1e-6
-        plt.figure()
-        plt.title(f'$V$ = 0.5 MV, $Q_L$ = 20k')
-        plt.plot(cavities, V_init1 * V_s, 'x', color='r')
-        plt.plot(cavities, V_final1 * V_s, 'D', color='r')
-
-        plt.plot(cavities, V_init2 * V_s, 'x', color='b')
-        plt.plot(cavities, V_final2 * V_s, 'D', color='b')
-
-        plt.xlabel('Cavity Number [-]')
-        plt.ylabel('RF Voltage [MV]')
-        plt.xticks(cavities)
-        plt.grid()
+        dut.plot_cavity_by_cavity(cavities, f'Bunch Length, $V$ = 0.5 MV, $Q_L$ = 20k',
+                                  r'$\tau_b$ [ns]', ibl, fbl)
 
     print(f'With 0.5 MV we expect f_s = {f_s1} Hz in B1 and f_s = {f_s2} Hz in B2.')
 
@@ -101,13 +74,17 @@ if VOLTAGE_10MV:
     init_osc_length = 2000
     final_osc_start = 10000
 
-    freqs_init, freqs_final = dut.analyse_synchrotron_frequency_cavity_by_cavity(V=1.0, QL=60, cavitiesB1=cavities,
-                                                                                 cavitiesB2=cavities,
-                                                                                 emittance='short', fdir=fdir,
-                                                                                 T_rev=T_rev,
-                                                                                 turn_constant=turn_constant,
-                                                                                 init_osc_length=init_osc_length,
-                                                                                 final_osc_start=final_osc_start)
+    plt_cav1 = None
+    plt_cav2 = None
+
+    freqs_init, freqs_final, ibl, fbl = dut.analyze_profiles_cavity_by_cavity(V=1.0, QL=60, cavitiesB1=cavities,
+                                                                              cavitiesB2=cavities,
+                                                                              emittance='short', fdir=fdir,
+                                                                              T_rev=T_rev,
+                                                                              turn_constant=turn_constant,
+                                                                              init_osc_length=init_osc_length,
+                                                                              final_osc_start=final_osc_start,
+                                                                              plt_cav1=plt_cav1, plt_cav2=plt_cav2)
 
     V_init1 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 0])
     V_init2 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 1], eta=mat.eta2)
@@ -118,41 +95,9 @@ if VOLTAGE_10MV:
     f_s2 = mat.synchrotron_frequency(1.0e6, eta=mat.eta2)
 
     if PLT_DATA:
-        fig, ax1 = plt.subplots()
-
-        ax1.set_title(f'$V$ = 1.0 MV, $Q_L$ = 60k')
-        ax1.plot(cavities, freqs_init[:, 0], 'x', color='r')
-        ax1.plot(cavities, freqs_final[:, 0], 'D', color='r')
-
-        ax1.plot(cavities, freqs_init[:, 1], 'x', color='b')
-        ax1.plot(cavities, freqs_final[:, 1], 'D', color='b')
-
-        ax1.set_xlabel('Cavity Number [-]')
-        ax1.set_ylabel('Synchrotron Frequency [Hz]')
-        ax1.grid()
-        ax1.set_xticks(cavities)
-
-        ax2 = ax1.twinx()
-        mn, mx = ax1.get_ylim()
-        mn = mat.RF_voltage_from_synchrotron_frequency(mn)
-        mx = mat.RF_voltage_from_synchrotron_frequency(mx)
-        V_s = 1e-6
-        ax2.set_ylim(mn * V_s, mx * V_s)
-        ax2.set_ylabel('RF Voltage [MV]')
-
-        V_s = 1e-6
-        plt.figure()
-        plt.title(f'$V$ = 1.0 MV, $Q_L$ = 60k')
-        plt.plot(cavities, V_init1 * V_s, 'x', color='r')
-        plt.plot(cavities, V_final1 * V_s, 'D', color='r')
-
-        plt.plot(cavities, V_init2 * V_s, 'x', color='b')
-        plt.plot(cavities, V_final2 * V_s, 'D', color='b')
-
-        plt.xlabel('Cavity Number [-]')
-        plt.ylabel('RF Voltage [MV]')
-        plt.xticks(cavities)
-        plt.grid()
+        dut.plot_cavity_by_cavity_voltage(cavities, freqs_init, freqs_final, 1.0, 60)
+        dut.plot_cavity_by_cavity(cavities, f'Bunch Length, $V$ = 1.0 MV, $Q_L$ = 60k',
+                                  r'$\tau_b$ [ns]', ibl, fbl)
 
     print(f'With 1.0 MV we expect f_s = {f_s1} Hz in B1 and f_s = {f_s2} Hz in B2.')
 
@@ -161,13 +106,17 @@ if VOLTAGE_15MV:
     init_osc_length = 2000
     final_osc_start = 10000
 
-    freqs_init, freqs_final = dut.analyse_synchrotron_frequency_cavity_by_cavity(V=1.5, QL=60, cavitiesB1=cavities,
-                                                                                 cavitiesB2=cavities,
-                                                                                 emittance='short', fdir=fdir,
-                                                                                 T_rev=T_rev,
-                                                                                 turn_constant=turn_constant,
-                                                                                 init_osc_length=init_osc_length,
-                                                                                 final_osc_start=final_osc_start)
+    plt_cav1 = None
+    plt_cav2 = None
+
+    freqs_init, freqs_final, ibl, fbl = dut.analyze_profiles_cavity_by_cavity(V=1.5, QL=60, cavitiesB1=cavities,
+                                                                              cavitiesB2=cavities,
+                                                                              emittance='short', fdir=fdir,
+                                                                              T_rev=T_rev,
+                                                                              turn_constant=turn_constant,
+                                                                              init_osc_length=init_osc_length,
+                                                                              final_osc_start=final_osc_start,
+                                                                              plt_cav1=plt_cav1, plt_cav2=plt_cav2)
 
     V_init1 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 0])
     V_init2 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 1], eta=mat.eta2)
@@ -178,41 +127,9 @@ if VOLTAGE_15MV:
     f_s2 = mat.synchrotron_frequency(1.5e6, eta=mat.eta2)
 
     if PLT_DATA:
-        fig, ax1 = plt.subplots()
-
-        ax1.set_title(f'$V$ = 1.5 MV, $Q_L$ = 60k')
-        ax1.plot(cavities, freqs_init[:, 0], 'x', color='r')
-        ax1.plot(cavities, freqs_final[:, 0], 'D', color='r')
-
-        ax1.plot(cavities, freqs_init[:, 1], 'x', color='b')
-        ax1.plot(cavities, freqs_final[:, 1], 'D', color='b')
-
-        ax1.set_xlabel('Cavity Number [-]')
-        ax1.set_ylabel('Synchrotron Frequency [Hz]')
-        ax1.grid()
-        ax1.set_xticks(cavities)
-
-        ax2 = ax1.twinx()
-        mn, mx = ax1.get_ylim()
-        mn = mat.RF_voltage_from_synchrotron_frequency(mn)
-        mx = mat.RF_voltage_from_synchrotron_frequency(mx)
-        V_s = 1e-6
-        ax2.set_ylim(mn * V_s, mx * V_s)
-        ax2.set_ylabel('RF Voltage [MV]')
-
-        V_s = 1e-6
-        plt.figure()
-        plt.title(f'$V$ = 1.5 MV, $Q_L$ = 60k')
-        plt.plot(cavities, V_init1 * V_s, 'x', color='r')
-        plt.plot(cavities, V_final1 * V_s, 'D', color='r')
-
-        plt.plot(cavities, V_init2 * V_s, 'x', color='b')
-        plt.plot(cavities, V_final2 * V_s, 'D', color='b')
-
-        plt.xlabel('Cavity Number [-]')
-        plt.ylabel('RF Voltage [MV]')
-        plt.xticks(cavities)
-        plt.grid()
+        dut.plot_cavity_by_cavity_voltage(cavities, freqs_init, freqs_final, 1.5, 60)
+        dut.plot_cavity_by_cavity(cavities, f'Bunch Length, $V$ = 1.5 MV, $Q_L$ = 60k',
+                                  r'$\tau_b$ [ns]', ibl, fbl)
 
     print(f'With 1.5 MV we expect f_s = {f_s1} Hz in B1 and f_s = {f_s2} Hz in B2.')
 
@@ -221,14 +138,18 @@ if VOLTAGE_15MV_CORR:
     init_osc_length = 2000
     final_osc_start = 10000
 
-    freqs_init, freqs_final = dut.analyse_synchrotron_frequency_cavity_by_cavity(V=1.5, QL=60, cavitiesB1=cavities,
-                                                                                 cavitiesB2=cavities,
-                                                                                 emittance='short', fdir=fdir,
-                                                                                 T_rev=T_rev,
-                                                                                 turn_constant=turn_constant,
-                                                                                 init_osc_length=init_osc_length,
-                                                                                 final_osc_start=final_osc_start,
-                                                                                 add='_corr')
+    plt_cav1 = None
+    plt_cav2 = None
+
+    freqs_init, freqs_final, ibl, fbl = dut.analyze_profiles_cavity_by_cavity(V=1.5, QL=60, cavitiesB1=cavities,
+                                                                              cavitiesB2=cavities,
+                                                                              emittance='short', fdir=fdir,
+                                                                              T_rev=T_rev,
+                                                                              turn_constant=turn_constant,
+                                                                              init_osc_length=init_osc_length,
+                                                                              final_osc_start=final_osc_start,
+                                                                              plt_cav1=plt_cav1, plt_cav2=plt_cav2,
+                                                                              add='_corr')
 
     V_init1 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 0])
     V_init2 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 1], eta=mat.eta2)
@@ -239,41 +160,9 @@ if VOLTAGE_15MV_CORR:
     f_s2 = mat.synchrotron_frequency(1.5e6, eta=mat.eta2)
 
     if PLT_DATA:
-        fig, ax1 = plt.subplots()
-
-        ax1.set_title(f'$V$ = 1.5 MV, $Q_L$ = 60k, Corrected')
-        ax1.plot(cavities, freqs_init[:, 0], 'x', color='r')
-        ax1.plot(cavities, freqs_final[:, 0], 'D', color='r')
-
-        ax1.plot(cavities, freqs_init[:, 1], 'x', color='b')
-        ax1.plot(cavities, freqs_final[:, 1], 'D', color='b')
-
-        ax1.set_xlabel('Cavity Number [-]')
-        ax1.set_ylabel('Synchrotron Frequency [Hz]')
-        ax1.grid()
-        ax1.set_xticks(cavities)
-
-        ax2 = ax1.twinx()
-        mn, mx = ax1.get_ylim()
-        mn = mat.RF_voltage_from_synchrotron_frequency(mn)
-        mx = mat.RF_voltage_from_synchrotron_frequency(mx)
-        V_s = 1e-6
-        ax2.set_ylim(mn * V_s, mx * V_s)
-        ax2.set_ylabel('RF Voltage [MV]')
-
-        V_s = 1e-6
-        plt.figure()
-        plt.title(f'$V$ = 1.5 MV, $Q_L$ = 60k, Corrected')
-        plt.plot(cavities, V_init1 * V_s, 'x', color='r')
-        plt.plot(cavities, V_final1 * V_s, 'D', color='r')
-
-        plt.plot(cavities, V_init2 * V_s, 'x', color='b')
-        plt.plot(cavities, V_final2 * V_s, 'D', color='b')
-
-        plt.xlabel('Cavity Number [-]')
-        plt.ylabel('RF Voltage [MV]')
-        plt.xticks(cavities)
-        plt.grid()
+        dut.plot_cavity_by_cavity_voltage(cavities, freqs_init, freqs_final, 1.5, 60, add_str=', Corrected')
+        dut.plot_cavity_by_cavity(cavities, f'Bunch Length, $V$ = 1.5 MV, $Q_L$ = 60k, Corrected',
+                                  r'$\tau_b$ [ns]', ibl, fbl)
 
     print(f'With 1.5 MV we expect f_s = {f_s1} Hz in B1 and f_s = {f_s2} Hz in B2.')
 
@@ -282,13 +171,17 @@ if NOMINAL_EMITTANCE:
     init_osc_length = 2000
     final_osc_start = 10000
 
-    freqs_init, freqs_final = dut.analyse_synchrotron_frequency_cavity_by_cavity(V=1.5, QL=60, cavitiesB1=cavities,
-                                                                                 cavitiesB2=cavities,
-                                                                                 emittance='nominal', fdir=fdir,
-                                                                                 T_rev=T_rev,
-                                                                                 turn_constant=turn_constant,
-                                                                                 init_osc_length=init_osc_length,
-                                                                                 final_osc_start=final_osc_start)
+    plt_cav1 = None
+    plt_cav2 = None
+
+    freqs_init, freqs_final, ibl, fbl = dut.analyze_profiles_cavity_by_cavity(V=1.5, QL=60, cavitiesB1=cavities,
+                                                                              cavitiesB2=cavities,
+                                                                              emittance='nominal', fdir=fdir,
+                                                                              T_rev=T_rev,
+                                                                              turn_constant=turn_constant,
+                                                                              init_osc_length=init_osc_length,
+                                                                              final_osc_start=final_osc_start,
+                                                                              plt_cav1=plt_cav1, plt_cav2=plt_cav2)
 
     V_init1 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 0])
     V_init2 = mat.RF_voltage_from_synchrotron_frequency(freqs_init[:, 1], eta=mat.eta2)
@@ -299,41 +192,9 @@ if NOMINAL_EMITTANCE:
     f_s2 = mat.synchrotron_frequency(1.5e6, eta=mat.eta2)
 
     if PLT_DATA:
-        fig, ax1 = plt.subplots()
-
-        ax1.set_title(f'$V$ = 1.5 MV, $Q_L$ = 60k, Nominal Emittance')
-        ax1.plot(cavities, freqs_init[:, 0], 'x', color='r')
-        ax1.plot(cavities, freqs_final[:, 0], 'D', color='r')
-
-        ax1.plot(cavities, freqs_init[:, 1], 'x', color='b')
-        ax1.plot(cavities, freqs_final[:, 1], 'D', color='b')
-
-        ax1.set_xlabel('Cavity Number [-]')
-        ax1.set_ylabel('Synchrotron Frequency [Hz]')
-        ax1.grid()
-        ax1.set_xticks(cavities)
-
-        ax2 = ax1.twinx()
-        mn, mx = ax1.get_ylim()
-        mn = mat.RF_voltage_from_synchrotron_frequency(mn)
-        mx = mat.RF_voltage_from_synchrotron_frequency(mx)
-        V_s = 1e-6
-        ax2.set_ylim(mn * V_s, mx * V_s)
-        ax2.set_ylabel('RF Voltage [MV]')
-
-        V_s = 1e-6
-        plt.figure()
-        plt.title(f'$V$ = 1.5 MV, $Q_L$ = 60k, Nominal Emittance')
-        plt.plot(cavities, V_init1 * V_s, 'x', color='r')
-        plt.plot(cavities, V_final1 * V_s, 'D', color='r')
-
-        plt.plot(cavities, V_init2 * V_s, 'x', color='b')
-        plt.plot(cavities, V_final2 * V_s, 'D', color='b')
-
-        plt.xlabel('Cavity Number [-]')
-        plt.ylabel('RF Voltage [MV]')
-        plt.xticks(cavities)
-        plt.grid()
+        dut.plot_cavity_by_cavity_voltage(cavities, freqs_init, freqs_final, 1.5, 60, add_str=', Nom. Em.')
+        dut.plot_cavity_by_cavity(cavities, f'Bunch Length, $V$ = 1.5 MV, $Q_L$ = 60k, Nom. Em.',
+                                  r'$\tau_b$ [ns]', ibl, fbl)
 
     print(f'With 1.5 MV we expect f_s = {f_s1} Hz in B1 and f_s = {f_s2} Hz in B2.')
 

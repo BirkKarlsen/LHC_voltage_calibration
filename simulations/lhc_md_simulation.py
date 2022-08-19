@@ -107,6 +107,10 @@ profile = Profile(beam, CutOptions(cut_left=-1.5 * rfstation.t_rf[0, 0],
                                    cut_right=2.5 * rfstation.t_rf[0, 0],
                                    n_slices=4 * 2**7))
 
+BQM = Profile(beam, CutOptions(cut_left=-0.75 * rfstation.t_rf[0, 0],
+                               cut_right=1.75 * rfstation.t_rf[0, 0],
+                               n_slices=250))
+
 # Fetching the beam
 for file in os.listdir(lxdir + data_files_dir + 'generated_beams/'):
     if emitt_str in file:
@@ -156,20 +160,21 @@ for i in range(N_t):
 
     rftracker.track()
     profile.track()
+    BQM.track()
     if IMP:
         total_Vind.induced_voltage_sum()
 
     if i % dt_track == 0:
-        bunch_pos[j], bunch_length[j] = dut.extract_bunch_position(profile.bin_centers, profile.n_macroparticles,
+        bunch_pos[j], bunch_length[j] = dut.extract_bunch_position(BQM.bin_centers, BQM.n_macroparticles,
                                                                    wind_len=2.5)
-        bunch_pos_COM[j] = dut.bunch_position_from_COM(profile.bin_centers, profile.n_macroparticles)
+        bunch_pos_COM[j] = dut.bunch_position_from_COM(BQM.bin_centers, BQM.n_macroparticles)
         time_since_injection[j] = np.sum(rfstation.t_rev[:i])
         j += 1
 
     if i % dt_plot == 0:
         print(f'Turn {i}')
-        dut.save_profile(profile, i, lxdir + sim_dir)
-        dut.plot_profile(profile, i, lxdir + sim_dir)
+        dut.save_profile(BQM, i, lxdir + sim_dir)
+        dut.plot_profile(BQM, i, lxdir + sim_dir)
 
 
         dts = np.linspace(-1.25e-9, (2.5 + 1.25) * 1e-9, 1000)

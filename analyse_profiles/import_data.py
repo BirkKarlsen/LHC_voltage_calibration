@@ -22,5 +22,3 @@ def find_file_in_folder(f, fdir):
             file_name = file
 
     return file_name
-
-
