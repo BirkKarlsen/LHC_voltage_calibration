@@ -7,7 +7,7 @@ Author: Birk Emil Karlsen-Bæck
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
-from blond_common.fitting.profile import binomial_amplitudeN_fit, FitOptions
+from blond_common.fitting.profile import binomial_amplitudeN_fit, FitOptions, PlotOptions
 from blond_common.interfaces.beam.analytic_distribution import binomialAmplitudeN
 import os
 import h5py
@@ -75,34 +75,35 @@ def getBeamPattern(timeScale, frames, heightFactor=0.015, distance=500, N_bunch_
                 baseline = np.mean(y[:baseline_length])
                 y = y - baseline
 
-            try:
-                if fit_option == 'fwhm':
-                    (mu, sigma, amp) = fwhm(x, y, level=0.5)
+            if fit_option == 'fwhm':
+                (mu, sigma, amp) = fwhm(x, y, level=0.5)
+            else:
+                (amp, mu, sigma, exponent) = binomial_amplitudeN_fit(x, y,
+                                                                     fitOpt=FitOptions(fittingRoutine='minimize'),
+                                                                     plotOpt=None)
+                y_fit = binomialAmplitudeN(x, *[amp, mu, sigma, exponent])
 
-                #                    (mu2, sigma2, amp2) = fwhm(x,y,level=0.95)
-                else:
-                    (amp, mu, sigma, exponent) = binomial_amplitudeN_fit(x, y)
-                    y_fit = binomialAmplitudeN(x, *[amp, mu, sigma, exponent])
 
-
-                    if plot_fit: #or exponent > 5:
+                if plot_fit: #or exponent > 5:
+                    if i % 1000 == 0:
+                        print(f'Profile {i}')
                         print(amp, mu, sigma, exponent)
 
-                        plt.plot(x, y, label='measurement')
-                        plt.plot(x, y_fit, label='fit')
-                        plt.vlines(x[baseline_length], np.min(y), np.max(y), linestyle='--')
-                        plt.legend()
-                        plt.show()
+                    #plt.plot(x, y, label='measurement')
+                    #plt.plot(x, y_fit, label='fit')
+                    #plt.vlines(x[baseline_length], np.min(y), np.max(y), linestyle='--')
+                    #plt.legend()
+                    #plt.show()
 
-                    sigma /= 4
-            except:
-                print(len(x), len(y))
-                print(x, y)
-                plt.figure()
-                plt.plot(x, y)
-                plt.show()
-                x_71 = x
-                y_71 = y
+                sigma /= 4
+            #except:
+            #    print(len(x), len(y))
+            #    print(x, y)
+            #    plt.figure()
+            #    plt.plot(x, y)
+            #    plt.show()
+            #    x_71 = x
+            #    y_71 = y
 
 
             Bunch_lengths[i, j] = 4 * sigma
@@ -302,11 +303,12 @@ def analyse_synchrotron_frequency_with_all_cavities(V, QL, emittance, fdir, T_re
     return freqs_init, freqs_final
 
 
-def analyze_profile(profile, t, T_rev, turn_constant, init_osc_length, final_osc_start):
+def analyze_profile(profile, t, T_rev, turn_constant, init_osc_length, final_osc_start, mode='fwhm', wind_len=4):
 
     N_bunches, Bunch_positions, Bunch_peaks, Bunch_lengths, Bunch_intensities, Bunch_positionsFit, \
     Bunch_peaksFit, Bunch_Exponent, Goodness_of_fit = getBeamPattern(t, profile, heightFactor=30,
-                                                                         wind_len=4)
+                                                                     wind_len=wind_len, fit_option=mode,
+                                                                     plot_fit=True)
 
     bpos = Bunch_positionsFit[:, 0]
     t = np.linspace(0, len(bpos), len(bpos)) * T_rev * turn_constant
@@ -572,8 +574,8 @@ def plot_bunch_position(bp, time, j, save_to, COM=False):
     else:
         ax.set_title('Bunch Position')
 
-    ax.plot(time[:j] * 1e-6, bp[:j])
-    ax.set_xlabel(r'Time since injection [$\mu$s]')
+    ax.plot(time[:j], bp[:j])
+    ax.set_xlabel(r'Time since injection [s]')
     ax.set_ylabel(r'Bunch position')
 
     if COM:
@@ -587,8 +589,8 @@ def plot_bunch_length(bl, time, j, save_to):
 
     ax.set_title('Bunch Length')
 
-    ax.plot(time[:j] * 1e-6, bl[:j])
-    ax.set_xlabel(r'Time since injection [$\mu$s]')
+    ax.plot(time[:j], bl[:j])
+    ax.set_xlabel(r'Time since injection [s]')
     ax.set_ylabel(r'Bunch length')
 
     fig.savefig(save_to + 'bunch_length.png')

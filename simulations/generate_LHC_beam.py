@@ -27,7 +27,7 @@ from blond.trackers.utilities import separatrix
 from SPS.impedance_scenario import scenario, impedance2blond
 
 # Options
-SAVE = True
+SAVE = False
 
 # Parameters ----------------------------------------------------------------------------------------------------------
 # Accelerator parameters

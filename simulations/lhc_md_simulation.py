@@ -27,7 +27,7 @@ parser.add_argument("--save_to", '-st', type=str,
 args = parser.parse_args()
 
 # Options -------------------------------------------------------------------------------------------------------------
-LXPLUS = True
+LXPLUS = False
 IMP = bool(args.impedance)
 if IMP:
     imp_str = '_with_impedance'
@@ -98,6 +98,8 @@ ring = Ring(C, alpha, p_s, Proton(), n_turns=N_t)
 
 # 400MHz RF station
 rfstation = RFStation(ring, [h], [V], [dphi])
+
+print(rfstation.t_rev)
 
 # Beam
 beam = Beam(ring, N_m, N_p)
