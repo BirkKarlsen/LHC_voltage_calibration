@@ -93,7 +93,7 @@ for i in range(len(Vs)):
             file_i = file_list[final_index]
         else:
             for file in os.listdir(sim_dir_i[:-1]):
-                if file.startswith(signal_name):
+                if file.startswith(signal_name) and file.endswith('.npy'):
                     print(f'Found {file} in {sim_folder_i}!\n')
                     file_i = file
 
