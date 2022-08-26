@@ -674,3 +674,45 @@ def retrieve_profile_measurements_based_on_file_names(fns, fdir, profile_length=
             print(f'Error - something went wrong when retrieving {fns[i]}')
 
     return profiles, ts, ids
+
+
+
+
+# Simulation Analysis file
+def get_sim_name(emittance, intensity, voltage, injection_error, turns):
+    r'''
+    File to get the right simulation name formate for a given setting.
+
+    :param emittance: Either 'small' or 'nominal'
+    :param intensity: intensity in units of 10^8
+    :param voltage: RF voltage in units of kV
+    :param injection_error: Injection eneryg error in units of MeV
+    :param turns: Number of turns that was simulated
+    :return: Simulation file name
+    '''
+    return f'{emittance}_emittance_int{intensity:.0f}e8_v{voltage:.0f}kV_dE{injection_error:.0f}MeV_{turns:.0f}turns'
+
+
+def get_sim_fit(emittance, intensity, V, dE, turns, ddir, mode='fwhm'):
+    sim_str_i = get_sim_name(emittance, intensity, V, dE, turns)
+
+    if mode == 'fwhm':
+        bp_str = 'bunch_position_' + sim_str_i + '.npy'
+    else:
+        bp_str = 'bunch_position_com_' + sim_str_i + '.npy'
+
+    time_str = 'time_since_injection_' + sim_str_i + '.npy'
+    bp = np.load(ddir + bp_str)
+    time = np.load(ddir + time_str)
+    time = np.concatenate((np.array([0]), time[time != 0]))
+    return fit_sin(time, bp[bp != 0])
+
+def get_sim_init_and_final_bunch_lengths(emittance, intensity, V, dE, turns, ddir, fin_points=1000):
+    sim_str_i = get_sim_name(emittance, intensity, V, dE, turns)
+
+    bp_str = 'bunch_length_' + sim_str_i + '.npy'
+
+    bp = np.load(ddir + bp_str)
+    bp = bp[bp != 0]
+
+    return bp[0], np.mean(bp[-fin_points:])

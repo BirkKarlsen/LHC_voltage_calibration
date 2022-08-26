@@ -60,3 +60,10 @@ def RF_voltage_from_synchrotron_frequency(f_s, E_s=E_s, beta=beta, T_rev=T_rev, 
     '''
     omega_s = 2 * np.pi * f_s
     return (E_s * omega_s**2 * beta**2 * T_rev**2)/(2 * np.pi * h * eta * q * np.cos(phi_s))
+
+def RF_voltage_from_synchrotron_frequency_second_order(f_s, dt, E_s=E_s, beta=beta, T_rev=T_rev, h=h, eta=eta1, q=q):
+    omega_s = 2 * np.pi * f_s
+    A = (E_s * omega_s**2 * beta**2 * T_rev**2)
+    B = (2 * np.pi * h * eta * q * np.cos(phi_s))
+    omega_rf = 2 * np.pi * h / T_rev
+    return A/B * 1/(1 - omega_rf**2 * dt**2 / 6)

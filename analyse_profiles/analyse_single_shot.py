@@ -24,7 +24,7 @@ plt.rcParams.update({
 data_dir = '../data_files/voltage_calibration_sorted/'
 
 # Shot configuration --------------------------------------------------------------------------------------------------
-V = 8.0                 # [MV]
+V = 4.0                 # [MV]
 QL = 60                 # k [-]
 cavity = 'all'              # Cavity number
 beam = 2                # Beamline

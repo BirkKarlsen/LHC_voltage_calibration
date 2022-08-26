@@ -27,7 +27,7 @@ parser.add_argument("--save_to", '-st', type=str,
 args = parser.parse_args()
 
 # Options -------------------------------------------------------------------------------------------------------------
-LXPLUS = False
+LXPLUS = True
 IMP = bool(args.impedance)
 if IMP:
     imp_str = '_with_impedance'
@@ -99,8 +99,6 @@ ring = Ring(C, alpha, p_s, Proton(), n_turns=N_t)
 # 400MHz RF station
 rfstation = RFStation(ring, [h], [V], [dphi])
 
-print(rfstation.t_rev)
-
 # Beam
 beam = Beam(ring, N_m, N_p)
 
@@ -155,6 +153,7 @@ bunch_pos = np.zeros(N_t//2)
 bunch_pos_COM = np.zeros(N_t//2)
 bunch_length = np.zeros(N_t//2)
 time_since_injection = np.zeros(N_t//2)
+bunch_profiles = np.zeros((250, N_t//2))
 j = 0
 
 for i in range(N_t):
@@ -172,6 +171,7 @@ for i in range(N_t):
                                                                    wind_len=2.5)
         bunch_pos_COM[j] = dut.bunch_position_from_COM(BQM.bin_centers, BQM.n_macroparticles)
         time_since_injection[j] = np.sum(rfstation.t_rev[:i])
+        bunch_profiles[:, j] = BQM.n_macroparticles
         j += 1
 
     if i % dt_plot == 0:
@@ -194,6 +194,7 @@ for i in range(N_t):
         dut.save_array(bunch_length, 'bunch_length', lxdir + sim_dir)
         dut.save_array(bunch_pos_COM, 'bunch_position_com', lxdir + sim_dir)
         dut.save_array(time_since_injection, 'time_since_injection', lxdir + sim_dir)
+        dut.save_array(bunch_profiles, 'bunch_profiles', lxdir + sim_dir)
 
 
 

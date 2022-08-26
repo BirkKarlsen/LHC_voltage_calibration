@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import utility_files.data_utilities as dut
 import utility_files.mathematical_relations as mre
+import analyse_simulations.error_afo_voltage as eav
 
 plt.rcParams.update({
         'text.usetex': True,
@@ -77,38 +78,47 @@ if PLT_DATA:
     V_s = 1e-6
     fig, ax1 = plt.subplots()
     ax1.set_title('Total Voltage After Correction')
-    ax1.plot(voltages, init_VB1 * V_s/voltages, color='b')
-    ax1.plot(voltages, final_VB1 * V_s/voltages, color='b', linestyle='--')
-    ax1.plot(voltages, init_VB2 * V_s/voltages, color='r')
-    ax1.plot(voltages, final_VB2 * V_s/voltages, color='r', linestyle='--')
+    mark = ['--', '-.', '-']
+    for i in range(eav.dEs.shape[0]):
+        ax1.plot(eav.Vs, eav.Vfrac_fwhm[i, :] * 1e-6, linestyle=mark[i], label=f'{eav.dEs[i]} MeV', color='black')
+        #ax1.plot(eav.Vs, eav.Vfrac_com[i, :] * 1e-6, linestyle=mark[i], label=f'COM {eav.dEs[i]}', color='g')
+
+    #ax1.plot(voltages, init_VB1 * V_s/voltages, color='b')
+    ax1.plot(voltages, final_VB1 * V_s/voltages, color='b', label='B1')#, linestyle='--')
+    #ax1.plot(voltages, init_VB2 * V_s/voltages, color='r')
+    ax1.plot(voltages, final_VB2 * V_s/voltages, color='r', label='B2')#, linestyle='--')
     ax1.set_xlabel('RF Voltage [MV]')
     ax1.set_ylabel(r'$V_\textrm{ant}/V_\textrm{set}$ [-]')
     ax1.grid()
     ax1.set_xlim((voltages[0], voltages[-1]))
-    dummy_lines = []
-    linestyles = ['-', '--']
-    for i in range(2):
-        dummy_lines.append(ax1.plot([], [], c="black", ls=linestyles[i])[0])
-    lines = ax1.get_lines()
-    legend2 = plt.legend([dummy_lines[i] for i in [0, 1]], ["Initial", "Final"])
+    ax1.legend(ncol=3)
+    #dummy_lines = []
+    #linestyles = ['-', '--']
+    #for i in range(2):
+    #    dummy_lines.append(ax1.plot([], [], c="black", ls=linestyles[i])[0])
+    #lines = ax1.get_lines()
+    #legend2 = plt.legend([dummy_lines[i] for i in [0, 1]], ["Initial", "Final"])
 
 
     fig, ax1 = plt.subplots()
     ax1.set_title('Total Voltage Scan, Bunch Length')
-    ax1.plot(voltages, init_bl[:, 0], color='b')
-    ax1.plot(voltages, final_bl[:, 0], color='b', linestyle='--')
-    ax1.plot(voltages, init_bl[:, 1], color='r')
-    ax1.plot(voltages, final_bl[:, 1], color='r', linestyle='--')
+    ax1.plot(eav.Vs, eav.bli[0, :], linestyle='--', label=r'$\tau_{b,i}$', color='black')
+    for i in range(eav.dEs.shape[0]):
+        ax1.plot(eav.Vs, eav.blf[i, :], linestyle=mark[i], label=f'{eav.dEs[i]} MeV', color='g')
+    #ax1.plot(voltages, init_bl[:, 0], color='b')
+    ax1.plot(voltages, final_bl[:, 0], color='b', label='B1')#, linestyle='--')
+    #ax1.plot(voltages, init_bl[:, 1], color='r')
+    ax1.plot(voltages, final_bl[:, 1], color='r', label='B2')#, linestyle='--')
     ax1.set_xlabel('RF Voltage [MV]')
     ax1.set_ylabel(r'$\tau_b$ [ns]')
     ax1.grid()
     ax1.set_xlim((voltages[0], voltages[-1]))
-
-    dummy_lines = []
-    linestyles = ['-', '--']
-    for i in range(2):
-        dummy_lines.append(ax1.plot([], [], c="black", ls=linestyles[i])[0])
-    lines = ax1.get_lines()
-    legend2 = plt.legend([dummy_lines[i] for i in [0, 1]], ["Initial", "Final"])
+    ax1.legend(ncol=3)
+    #dummy_lines = []
+    #linestyles = ['-', '--']
+    #for i in range(2):
+    #    dummy_lines.append(ax1.plot([], [], c="black", ls=linestyles[i])[0])
+    #lines = ax1.get_lines()
+    #legend2 = plt.legend([dummy_lines[i] for i in [0, 1]], ["Initial", "Final"])
 
 plt.show()
